@@ -1,21 +1,22 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const MongoClient = require('mongodb').MongoClient;
 const ObjectId = require('mongodb').ObjectId;
 
+const db = require('./db');
+
 const app = express();
-let db;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
-	res.send('API');
+	res.sendStatus(200);
 });
 
 // get all books
 app.get('/books', (req, res) => {
-	db.collection('books')
+	db.get()
+		.collection('books')
 		.find()
 		.toArray((err, docs) => {
 			if (err) {
@@ -28,13 +29,15 @@ app.get('/books', (req, res) => {
 
 // get book by id
 app.get('/books/:id', (req, res) => {
-	db.collection('books').findOne({ _id: ObjectId(req.params.id) }, (err, book) => {
-		if (err) {
-			console.error(err);
-			return res.sendStatus(500);
-		}
-		res.send(book);
-	});
+	db.get()
+		.collection('books')
+		.findOne({ _id: ObjectId(req.params.id) }, (err, book) => {
+			if (err) {
+				console.error(err);
+				return res.sendStatus(500);
+			}
+			res.send(book);
+		});
 });
 
 // add new book
@@ -43,47 +46,48 @@ app.post('/books', (req, res) => {
 		name: req.body.name,
 	};
 
-	db.collection('books').insertOne(book, (err, result) => {
-		if (err) {
-			console.error(err);
-			return res.sendStatus(500);
-		}
-	});
+	db.get()
+		.collection('books')
+		.insertOne(book, (err, result) => {
+			if (err) {
+				console.error(err);
+				return res.sendStatus(500);
+			}
+		});
 
 	res.sendStatus(200);
 });
 
 // update book
 app.put('/books/:id', (req, res) => {
-	db.collection('books').updateOne(
-		{ _id: ObjectId(req.params.id) },
-		{ $set: { name: req.body.name } },
-		(err, book) => {
+	db.get()
+		.collection('books')
+		.updateOne({ _id: ObjectId(req.params.id) }, { $set: { name: req.body.name } }, (err, book) => {
 			if (err) {
 				console.error(err);
 				return res.sendStatus(500);
 			}
 			res.sendStatus(200);
-		}
-	);
+		});
 });
 
 // delete book
 app.delete('/books/:id', (req, res) => {
-	db.collection('books').deleteOne({ _id: ObjectId(req.params.id) }, (err, book) => {
-		if (err) {
-			console.error(err);
-			return res.sendStatus(500);
-		}
-		res.sendStatus(200);
-	});
+	db.get()
+		.collection('books')
+		.deleteOne({ _id: ObjectId(req.params.id) }, (err, book) => {
+			if (err) {
+				console.error(err);
+				return res.sendStatus(500);
+			}
+			res.sendStatus(200);
+		});
 });
 
-MongoClient.connect('mongodb://localhost:27017/api', { useNewUrlParser: true }, (err, database) => {
+db.connect('mongodb://localhost:27017/api', (err, database) => {
 	if (err) {
 		return console.error(err);
 	}
-	db = database.db('api');
 	app.listen(3012, () => {
 		console.log('API start');
 	});
